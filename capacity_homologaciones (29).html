@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capacity — Homologaciones</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0F2645;--blue:#1D4E8F;--green:#059669;--amber:#D97706;--red:#DC2626;
+  --bg:#F4F6FA;--white:#FFF;--bdr:#E2E8F0;--txt:#1E293B;--muted:#64748B
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:13px}
+
+/* TOPBAR */
+.topbar{background:var(--navy);color:#fff;height:52px;padding:0 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.topbar h1{font-size:15px;font-weight:600}
+.topbar-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.tbtn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+
+/* UPLOAD */
+#upload-zone{min-height:calc(100vh - 52px);display:flex;align-items:center;justify-content:center;padding:32px}
+.ucard{background:#fff;border-radius:16px;padding:48px 40px;max-width:500px;width:100%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.ucard h2{font-size:20px;font-weight:600;color:var(--navy);margin-bottom:10px}
+.ucard p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:28px}
+.drop-area{border:2px dashed var(--bdr);border-radius:12px;padding:36px;margin-bottom:20px;cursor:pointer;transition:.2s}
+.drop-area:hover,.drop-area.over{border-color:var(--blue);background:#EFF6FF}
+.drop-area.loaded{border-color:var(--green);border-style:solid;background:#F0FDF4}
+.drop-icon{font-size:44px;margin-bottom:10px}
+.drop-text{font-size:13px;color:var(--muted)}
+.drop-name{font-size:12px;color:var(--green);font-weight:500;margin-top:6px}
+.ubtn{display:inline-block;background:var(--blue);color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer}
+
+/* APP */
+#app{display:none}
+.abar{background:#fff;border-bottom:1px solid var(--bdr);padding:8px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.atag{background:var(--bg);border:1px solid var(--bdr);border-radius:12px;padding:3px 10px;font-size:11px;color:var(--muted)}
+.atag.ok{background:#F0FDF4;border-color:#BBF7D0;color:var(--green)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--bdr);background:#fff;padding:0 24px;overflow-x:auto}
+.tab{padding:10px 18px;font-size:12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;margin-bottom:-1px}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.pane{display:none;padding:20px 24px}.pane.on{display:block}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.kpi{background:#fff;border-radius:10px;padding:16px 18px;border:1px solid var(--bdr)}
+.kl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.kv{font-size:26px;font-weight:700;line-height:1}.ks{font-size:10px;color:var(--muted);margin-top:3px}
+.kv.blue{color:var(--blue)}.kv.green{color:var(--green)}.kv.amber{color:var(--amber)}.kv.red{color:var(--red)}
+
+/* MONTH BARS */
+.bcard{background:#fff;border-radius:10px;border:1px solid var(--bdr);padding:18px 22px;margin-bottom:18px}
+.bcard h3{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:14px}
+.mbars{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;align-items:end}
+.mbc{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mbl{font-size:10px;color:var(--muted);font-weight:500}
+.mbt{width:100%;height:64px;background:#F1F5F9;border-radius:4px;overflow:hidden;display:flex;align-items:flex-end}
+.mbf{width:100%;border-radius:4px}
+.mbf.ok{background:var(--green)}.mbf.hi{background:var(--amber)}.mbf.ov{background:var(--red)}
+.mbv{font-size:11px;font-weight:600}.mbp{font-size:9px;color:var(--muted)}
+
+/* SECTION CARD */
+.sc{background:#fff;border-radius:10px;border:1px solid var(--bdr);margin-bottom:16px;overflow:hidden}
+.sch{padding:12px 18px;font-size:12px;font-weight:600;color:var(--navy);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px}
+.bdg{display:inline-block;font-size:10px;padding:1px 7px;border-radius:8px;font-weight:500}
+.bg{background:#DCFCE7;color:#166534}.ba{background:#FEF3C7;color:#92400E}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#F8FAFC;padding:7px 12px;text-align:center;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--bdr);white-space:nowrap}
+th.l{text-align:left}
+td{padding:7px 12px;border-bottom:1px solid #F1F5F9;text-align:center;vertical-align:middle}
+td.l{text-align:left}
+tr:last-child td{border-bottom:none}
+tr.tot td{background:#F8FAFC;font-weight:600}
+.pill{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:500}
+.pb{background:#DBEAFE;color:#1E40AF}.pg{background:#DCFCE7;color:#166534}.pa{background:#FEF3C7;color:#92400E}.pz{background:#F1F5F9;color:#475569}
+.hc{font-weight:600;border-radius:4px;padding:2px 6px;display:inline-block;min-width:32px;font-size:11px}
+.hok{background:#F0FDF4;color:var(--green)}.hhi{background:#FFFBEB;color:var(--amber)}.hov{background:#FEF2F2;color:var(--red)}.hz{color:#CBD5E1;font-weight:400}
+
+/* PERSON CARDS */
+.msel{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.msel-lbl{font-size:12px;font-weight:500;color:var(--navy)}
+.mbtn{padding:4px 12px;border-radius:14px;border:1px solid var(--bdr);background:#fff;font-size:11px;cursor:pointer;color:var(--muted)}
+.mbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.pc{background:#fff;border-radius:12px;border:1px solid var(--bdr);overflow:hidden}
+.pch{padding:14px 16px 10px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.pn{font-size:14px;font-weight:600;color:var(--navy)}.psub{font-size:11px;color:var(--muted);margin-top:2px}
+.phr{text-align:right;flex-shrink:0}
+.phv{font-size:22px;font-weight:700;line-height:1}
+.phl{font-size:11px;font-weight:600;margin-top:2px}
+.phc{font-size:10px;color:var(--muted);margin-top:1px}
+.pbar-wrap{padding:8px 16px 4px}
+.pbar-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px}
+.pbt{height:8px;background:#F1F5F9;border-radius:4px;overflow:hidden}
+.pbf{height:100%;border-radius:4px;transition:width .4s}
+.pbft{display:flex;justify-content:space-between;padding:4px 16px 10px;font-size:10px;color:var(--muted)}
+.prows{padding:0 0 6px}
+.pr{display:flex;align-items:center;padding:7px 16px;border-bottom:1px solid #F8FAFC;gap:8px}
+.pr:last-child{border-bottom:none}
+.prk{font-family:monospace;font-size:10px;color:var(--muted);flex-shrink:0;min-width:82px}
+.prn{font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pre{font-size:10px;color:var(--muted);background:#F1F5F9;padding:1px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.prm{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;min-width:32px;text-align:right}
+.ebtn{cursor:pointer;color:#CBD5E1;font-size:12px;flex-shrink:0;background:none;border:none;padding:0 2px}
+.ebtn:hover{color:var(--blue)}
+.pem{padding:14px 16px;font-size:11px;color:var(--muted);text-align:center}
+
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.mbg.on{display:flex}
+.md{background:#fff;border-radius:12px;padding:24px;width:360px}
+.md h3{font-size:14px;font-weight:600;margin-bottom:14px;color:var(--navy)}
+.mlbl{display:block;font-size:11px;color:var(--muted);margin:10px 0 3px}
+.mi{width:100%;border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;font-size:13px;outline:none}
+.mft{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.bs{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer}
+.bp{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:500}
+.epop{position:fixed;z-index:200;background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.15);width:280px}
+.epop label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.epop input{width:100%;border:1px solid #CBD5E1;border-radius:6px;padding:7px 10px;font-size:13px;margin-bottom:10px;outline:none}
+.epop-ft{display:flex;gap:6px;justify-content:flex-end}
+.trow{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#F8FAFC;border-radius:8px;border:1px solid var(--bdr);margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🔵 Capacity — Homologaciones</h1>
+  <div class="topbar-r">
+    <span id="cap-tag" style="font-size:11px;color:rgba(255,255,255,.6)"></span>
+    <button class="tbtn" onclick="openCfg()">⚙ Config</button>
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<div id="upload-zone">
+  <div class="ucard">
+    <h2>Panel de Capacidad</h2>
+    <p>Subí el archivo de épicas con <strong>estimación, persona asignada, fecha de inicio y fecha de fin</strong>. La app calcula automáticamente cuántas horas tiene comprometidas cada persona por mes.</p>
+    <div class="drop-area" id="drop-area" onclick="document.getElementById('file-in').click()">
+      <div class="drop-icon">📊</div>
+      <div class="drop-text">Hacé click o arrastrá el archivo acá</div>
+      <div class="drop-name" id="drop-name"></div>
+    </div>
+    <label class="ubtn" for="file-in">Seleccionar archivo (.xlsx)</label>
+    <input type="file" id="file-in" accept=".xlsx" style="display:none">
+    <p style="margin-top:14px;font-size:11px;color:var(--muted)">
+      Columnas necesarias: <strong>Key · Persona asignada · Σ Estimación · Estado · Fecha estimada de inicio · Fecha estimada de fin</strong>
+    </p>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="mbg" id="cfg-modal">
+  <div class="md" style="width:420px">
+    <h3>⚙ Configuración</h3>
+    <label class="mlbl">Personas en el equipo</label><input class="mi" type="number" id="cfg-p" value="7" min="1">
+    <label class="mlbl">Horas disponibles por persona / mes</label><input class="mi" type="number" id="cfg-h" value="160">
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr)">
+      <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:10px">🔗 Conexión a Jira (opcional)</div>
+      <label class="mlbl">URL de Jira</label>
+      <input class="mi" type="text" id="cfg-jurl" placeholder="https://tuempresa.atlassian.net">
+      <label class="mlbl">Email de Jira</label>
+      <input class="mi" type="email" id="cfg-jemail" placeholder="tu@empresa.com">
+      <label class="mlbl">API Token</label>
+      <input class="mi" type="password" id="cfg-jtoken" placeholder="Tu API token de Atlassian">
+      <label class="mlbl">Proyecto (clave)</label>
+      <input class="mi" type="text" id="cfg-jproject" placeholder="FQAS10" value="FQAS10">
+      <p style="font-size:10px;color:var(--muted);margin-top:6px">El token se guarda solo en tu navegador, nunca sale de tu computadora.</p>
+    </div>
+    <div class="mft">
+      <button class="bs" onclick="closeCfg()">Cancelar</button>
+      <button class="bs" onclick="testJira()" id="test-btn">🔗 Probar conexión</button>
+      <button class="bp" onclick="saveCfg()">Guardar</button>
+    </div>
+    <div id="jira-status" style="font-size:11px;margin-top:8px;min-height:16px;text-align:center"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="abar">
+    <strong style="font-size:12px;color:var(--navy)">Capacity Panel</strong>
+    <span class="atag ok" id="tag-file"></span>
+    <span class="atag" id="tag-upd"></span>
+    <button onclick="syncJira()" id="sync-btn" style="margin-left:auto;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;display:none">⟳ Sincronizar Jira</button>
+    <button onclick="resetApp()" style="border:1px solid var(--bdr);background:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;color:var(--muted);margin-left:6px">↑ Cambiar archivo</button>
+  </div>
+  <div class="tabs">
+    <div class="tab on"  onclick="showPane('resumen',this)">Resumen</div>
+    <div class="tab" onclick="showPane('pormes',this)">Por Persona / Mes</div>
+    <div class="tab" onclick="showPane('anual',this)">Vista Anual</div>
+    <div class="tab" onclick="showPane('epicas',this)">Épicas Activas</div>
+    <div class="tab" onclick="showPane('backlog',this)">Backlog</div>
+    <div class="tab" onclick="showPane('finalizadas',this)">✅ Finalizadas</div>
+    <div class="tab" onclick="showPane('equipo',this)">👥 Mi Equipo</div>
+  </div>
+
+  <div class="pane on" id="pane-resumen">
+    <div class="kpis" id="kpis"></div>
+    <div class="kpis" id="kpis2" style="margin-top:-6px"></div>
+    <div class="bcard"><h3 id="bar-ttl">Horas comprometidas por mes — equipo</h3><div class="mbars" id="mbars"></div></div>
+    <div class="sc"><div class="sch">Resumen por persona — mes actual</div>
+      <table><thead><tr>
+        <th class="l">Persona</th><th>Épicas activas</th><th>Comprometido mes</th><th>% cap.</th><th>Disponible</th>
+      </tr></thead><tbody id="tb-res"></tbody></table></div>
+  </div>
+
+  <div class="pane" id="pane-pormes">
+    <div class="msel">
+      <span class="msel-lbl">Mes:</span>
+      <div id="msel-btns" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      <label style="margin-left:auto;display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--muted)">
+        <input type="checkbox" id="hide-zero" onchange="renderPM()"> Solo con horas
+      </label>
+    </div>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+
+  <div class="pane" id="pane-anual">
+    <div class="sc"><div class="sch">Horas comprometidas por persona × mes — cap. <span id="cap-lbl">160</span>h</div>
+      <div style="overflow-x:auto"><table id="tbl-anual"></table></div></div>
+  </div>
+
+  <div class="pane" id="pane-epicas">
+    <div class="sc"><div class="sch">Épicas Activas <span class="bdg bg" id="cnt-a">0</span>
+      <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:4px">· horas distribuidas por mes según estimación ÷ duración</span>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th class="l">Key</th><th class="l" style="min-width:180px">Épica</th><th class="l">Responsable</th>
+      <th>Σ Est.</th><th>Inicio</th><th>Fin</th><th>Meses</th>
+      <th>h/mes</th><th>Estado</th>
+    </tr></thead><tbody id="tb-epi"></tbody></table></div></div>
+  </div>
+
+  <div class="pane" id="pane-backlog">
+    <div class="sc"><div class="sch">Backlog — sin fechas o sin estimación <span class="bdg ba" id="cnt-b">0</span></div>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th class="l">Key</th><th class="l">Épica</th><th class="l">Responsable</th>
+      <th>Σ Est.</th><th>Inicio</th><th>Fin</th><th>Estado</th>
+    </tr></thead><tbody id="tb-bl"></tbody></table></div></div>
+  </div>
+
+  <div class="pane" id="pane-finalizadas">
+    <div class="sc"><div class="sch">✅ Épicas finalizadas por mes de cierre <span class="bdg bg" id="cnt-f">0</span></div>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th class="l">Mes cierre</th><th>Épicas</th><th>Σ Estimación</th><th class="l">Detalle</th>
+    </tr></thead><tbody id="tb-fin"></tbody></table></div></div>
+  </div>
+
+  <div class="pane" id="pane-equipo">
+    <div style="max-width:580px">
+      <div class="sc" style="margin-bottom:14px"><div class="sch">👥 Personas del equipo</div>
+        <div style="padding:14px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Si está vacío se muestran todas las personas de las épicas.</p>
+          <div id="team-list" style="margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="new-mbr" placeholder="Nombre completo..."
+              style="border:1px solid var(--bdr);border-radius:6px;padding:6px 10px;font-size:12px;flex:1;min-width:160px;outline:none"
+              onkeydown="if(event.key==='Enter')addMbr()">
+            <button onclick="addMbr()" class="bp" style="font-size:12px">+ Agregar</button>
+            <button onclick="importTeam()" class="bs" style="font-size:12px">↓ Importar desde épicas</button>
+          </div>
+          <div id="imp-msg" style="font-size:11px;color:var(--green);margin-top:6px;min-height:14px"></div>
+        </div>
+      </div>
+      <div class="sc"><div class="sch">✅ Estados considerados activos</div>
+        <div style="padding:14px">
+          <div id="st-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="new-st" placeholder="Ej: IN REVIEW"
+              style="border:1px solid var(--bdr);border-radius:6px;padding:6px 10px;font-size:12px;width:190px;outline:none"
+              onkeydown="if(event.key==='Enter')addSt()">
+            <button onclick="addSt()" class="bs" style="font-size:12px">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════
+// ESTADO
+// ═══════════════════════════
+var CFG = {p:7, h:160};
+var CAP_P = 160, CAP_E = 1120;
+var EPICS = [];
+var CUR_MO = null;
+var OVR = {};  // key → persona override
+var TEAM = [];
+var ACT = ['EN CURSO','HOMOLOGACIÓN','HOMOLOGACION','IN TESTING','IN PROGRESS',
+           'INSTALLED','READY TO DEPLOY','READY TO DEVELOP','IN DEVELOPMENT',
+           'IN ANALYSIS','IN APPROVAL','DEVELOPED'];
+var BL  = ['POR PLANIFICAR',
+           'POR INGRESAR',
+           'POR DEFINIR SOLUCION / PRESUPUESTO',
+           'POR APROBAR SOLUCION / PRESUPUESTO',
+           'POR JUSTIFICAR',
+           'BLOQUEADO'];
+
+function isAct(e){ return ACT.some(function(s){ return e.st.toUpperCase().indexOf(s)>=0; }); }
+function isBL(e){  return BL.some(function(s){  return e.st.toUpperCase()===s.toUpperCase(); }); }
+function sn(s){ if(!s||!s.trim())return'—'; var p=s.trim().split(' '); return p.length>=2?p[0]+' '+p[p.length-1]:s; }
+function uniq(a){ var s={},o=[]; a.forEach(function(x){if(!s[x]){s[x]=1;o.push(x);}}); return o; }
+function fmt(h){ return h>0 ? h.toFixed(0)+'h' : '—'; }
+function fmtDate(d){ return d ? d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—'; }
+
+// ═══════════════════════════
+// FILE INPUT
+// ═══════════════════════════
+document.getElementById('file-in').onchange = function(e){
+  var f = e.target.files && e.target.files[0];
+  if(f) loadFile(f);
+  e.target.value = '';
+};
+var da = document.getElementById('drop-area');
+da.ondragover  = function(e){ e.preventDefault(); da.classList.add('over'); };
+da.ondragleave = function(){ da.classList.remove('over'); };
+da.ondrop = function(e){
+  e.preventDefault(); da.classList.remove('over');
+  var f = e.dataTransfer.files[0]; if(f) loadFile(f);
+};
+
+function loadFile(file){
+  da.querySelector('.drop-text').textContent = 'Procesando...';
+  document.getElementById('drop-name').textContent = '';
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      var wb = XLSX.read(ev.target.result, {type:'array', cellDates:false});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:null});
+      EPICS = parseEpics(rows);
+      var now = new Date();
+      CUR_MO = {yr:now.getFullYear(), mo:now.getMonth()+1};
+      CAP_P = CFG.h; CAP_E = CFG.p * CFG.h;
+      document.getElementById('cap-tag').textContent = CFG.p+'×'+CFG.h+'h='+CAP_E+'h';
+      document.getElementById('cap-lbl').textContent = CAP_P;
+      document.getElementById('tag-file').textContent = file.name.replace(/\.[^.]+$/,'');
+      document.getElementById('tag-upd').textContent = new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      document.getElementById('upload-zone').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      da.classList.add('loaded');
+      renderAll();
+    } catch(err){ alert('Error leyendo el archivo: '+err.message); da.querySelector('.drop-text').textContent='Hacé click o arrastrá el archivo acá'; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetApp(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('upload-zone').style.display='flex';
+  da.classList.remove('loaded');
+  da.querySelector('.drop-text').textContent='Hacé click o arrastrá el archivo acá';
+  document.getElementById('drop-name').textContent='';
+  EPICS=[];
+}
+
+// ═══════════════════════════
+// PARSE
+// ═══════════════════════════
+function fc(keys, terms){
+  return keys.find(function(k){
+    return terms.some(function(t){ return k && k.toLowerCase().indexOf(t.toLowerCase())>=0; });
+  }) || '';
+}
+
+function parseH(v){
+  if(v===null||v===undefined) return 0;
+  if(typeof v==='number'){
+    if(v<=0) return 0;
+    if(v<60) return Math.round(v*24*10)/10;  // decimal days (timedelta)
+    return v;
+  }
+  var n = parseFloat(String(v));
+  if(isNaN(n)||n<=0) return 0;
+  if(n>3600) return Math.round(n/3600*10)/10;
+  if(n<60)   return Math.round(n*24*10)/10;
+  return n;
+}
+
+function parseDate(v){
+  if(!v) return null;
+  // Excel serial date
+  if(typeof v==='number' && v>40000){
+    var d = new Date(Math.round((v-25569)*86400000));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  var s = String(v).trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function parseEpics(rows){
+  if(!rows.length) return [];
+  var keys = Object.keys(rows[0]);
+  var cK   = fc(keys, ['key','clave']);
+  var cSum = fc(keys, ['summary','resumen']);
+  var cSt  = fc(keys, ['status','estado']);
+  var cPer = fc(keys, ['persona asignada','asignado','assignee','responsable']);
+  var cEst = fc(keys, ['σ estimación','estimación orig','Σ estimaci','estimacion orig']);
+  var cFi  = fc(keys, ['fecha estimada de inicio','inicio','start date','planned start']);
+  var cFf  = fc(keys, ['fecha estimada de fin','fin estimada','due date','planned end','end date']);
+
+  // Dedup: skip FPPI if PPIHOMO exists with same name+persona
+  var storyPfx = ['PPIHOMO','PPISTR','PPIFUN3','PPIQASTR','PPIQAH'];
+  var storyMap = {}; // "sum|per" -> true
+  var estMap   = {}; // "sum|per" -> true (someone has est>0)
+  rows.forEach(function(r){
+    var key = String(r[cK]||'').trim();
+    if(!key) return;
+    var pfx = key.split('-')[0].toUpperCase();
+    var sig = String(r[cSum]||'').trim()+'|'+String(r[cPer]||'').trim();
+    if(storyPfx.indexOf(pfx)>=0) storyMap[sig] = true;
+    if(parseH(r[cEst])>0) estMap[sig] = true;
+  });
+
+  var seen = {}, seenSig = {}, result = [];
+  rows.forEach(function(r){
+    var key = String(r[cK]||'').trim(); if(!key||seen[key]) return; seen[key]=1;
+    var summ = String(r[cSum]||'').trim();
+    var per  = OVR[key] || String(r[cPer]||'').trim();
+    var pfx  = key.split('-')[0].toUpperCase();
+    var sig  = summ+'|'+per;
+    var est  = parseH(r[cEst]);
+
+    // Skip rows with no estimation AND no dates (can't calculate anything)
+    // Keep FPPI even if PPIHOMO exists — FPPI has the estimation
+    // Skip PPIHOMO/PPISTR that have est=0 (their parent FPPI has the est)
+    var isStory = storyPfx.indexOf(pfx)>=0;
+    if(isStory && est===0) return;  // story with no est = skip, parent FPPI has it
+    // Skip duplicates by name+persona when no estimation
+    if(est===0 && estMap[sig] && seenSig[sig]) return;
+    seenSig[sig] = true;
+
+    var fi = parseDate(r[cFi]);
+    var ff = parseDate(r[cFf]);
+
+    result.push({
+      key:  key,
+      sum:  summ.slice(0,72),
+      st:   String(r[cSt]||'').trim(),
+      per:  per,
+      est:  est,  // may be inherited from FPPI parent
+      fi:   fi,
+      ff:   ff,
+    });
+  });
+  return result;
+}
+
+// ═══════════════════════════
+// HOURS PER MONTH
+// ═══════════════════════════
+// Core logic: estimate / number of months epic is active
+function activeMonths(fi, ff){
+  // Returns array of {yr, mo} for each month the epic is active
+  var months = [], y=fi.getFullYear(), m=fi.getMonth()+1;
+  var ey=ff.getFullYear(), em=ff.getMonth()+1;
+  var limit = 36; // safety limit
+  while((y<ey||(y===ey&&m<=em)) && limit-->0){
+    months.push({yr:y, mo:m});
+    m++; if(m>12){m=1;y++;}
+  }
+  return months;
+}
+
+function hsMo(e, yr, mo){
+  // No estimation → 0
+  if(!e.est || e.est<=0) return 0;
+  // No dates → can't distribute
+  if(!e.fi || !e.ff) return 0;
+  var months = activeMonths(e.fi, e.ff);
+  if(!months.length) return 0;
+  // Is this month in the epic's range?
+  var inRange = months.some(function(m){ return m.yr===yr && m.mo===mo; });
+  if(!inRange) return 0;
+  // Distribute evenly
+  return Math.round(e.est / months.length * 10) / 10;
+}
+
+function numMonths(e){
+  if(!e.fi||!e.ff) return 0;
+  return activeMonths(e.fi, e.ff).length;
+}
+
+function hPerMonth(e){
+  var n = numMonths(e);
+  return n>0 ? Math.round(e.est/n*10)/10 : 0;
+}
+
+// ═══════════════════════════
+// FILTER
+// ═══════════════════════════
+function getEpics(){
+  if(!TEAM.length) return EPICS;
+  return EPICS.map(function(e){
+    if(TEAM.indexOf(e.per)===-1 && e.per && e.per.trim()){
+      var c=Object.assign({},e); c.per='(Otros)'; return c;
+    }
+    return e;
+  });
+}
+
+// Build months to show: current year Jan–Dec
+function buildMonths(){
+  var yr = new Date().getFullYear();
+  return [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
+    return {yr:yr, mo:m, lbl:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][m-1]+"'"+String(yr).slice(2)};
+  });
+}
+
+// ═══════════════════════════
+// RENDER
+// ═══════════════════════════
+function renderAll(){
+  var ep=getEpics(), act=ep.filter(isAct), bl=ep.filter(isBL);
+  var months=buildMonths();
+  renderKPIs(act, months);
+  renderBars(act, months);
+  renderResumen(act, months);
+  renderMsel(months);
+  renderPM();
+  renderAnual(act, months);
+  renderEpicas(act);
+  renderBL(bl, []);
+  renderFinalizadas(ep);
+}
+function renderPM(){
+  var ep=getEpics(), act=ep.filter(isAct), months=buildMonths();
+  renderPorMes(act, months, CUR_MO);
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function renderKPIs(act, months){
+  var mo=CUR_MO.mo, yr=CUR_MO.yr;
+  var comp=act.reduce(function(s,e){return s+hsMo(e,yr,mo);},0);
+  var pct=comp/CAP_E;
+
+  // Backlog pendiente de aprobación
+  var ep=getEpics();
+  var blApproval=ep.filter(function(e){
+    var st=e.st.toUpperCase();
+    return st==='POR APROBAR SOLUCION / PRESUPUESTO'||st==='POR DEFINIR SOLUCION / PRESUPUESTO'||st==='POR JUSTIFICAR';
+  });
+
+  // Throughput: avg epics implemented per month (last 3 months)
+  var done=ep.filter(isDone);
+  var now=new Date(), throughputMos=[];
+  for(var i=1;i<=3;i++){
+    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    var yr2=d.getFullYear(), mo2=d.getMonth()+1;
+    var cnt=done.filter(function(e){
+      if(!e.ff) return false;
+      return e.ff.getFullYear()===yr2&&e.ff.getMonth()+1===mo2;
+    }).length;
+    throughputMos.push(cnt);
+  }
+  var throughput=throughputMos.reduce(function(s,n){return s+n;},0)/3;
+
+  // Lead time: backlog items / throughput
+  var blTotal=ep.filter(isBL).length;
+  var leadTime=throughput>0?Math.ceil(blTotal/throughput):null;
+
+  // Row 1
+  document.getElementById('kpis').innerHTML=[
+    {l:'Capacidad equipo/mes', v:CAP_E+'h', s:CFG.p+'×'+CFG.h+'h disponibles', c:'blue'},
+    {l:'% comprometido este mes', v:(pct*100).toFixed(0)+'%', s:Math.round(comp)+'h de '+CAP_E+'h', c:pct>1?'red':pct>.85?'amber':'green'},
+    {l:'Disponible este mes', v:Math.max(0,Math.round(CAP_E-comp))+'h', s:'capacidad libre para nuevas épicas', c:(CAP_E-comp)<CAP_P?'amber':'green'},
+    {l:'Épicas activas', v:act.length, s:'en curso con estimación y fechas', c:'amber'},
+  ].map(function(k){
+    return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv '+k.c+'">'+k.v+'</div><div class="ks">'+k.s+'</div></div>';
+  }).join('');
+
+  // Row 2
+  document.getElementById('kpis2').innerHTML=[
+    {l:'Backlog pendiente aprobación', v:blApproval.length, s:'épicas frenadas por presupuesto', c:blApproval.length>5?'red':blApproval.length>2?'amber':'green'},
+    {l:'Throughput (últ. 3 meses)', v:throughput.toFixed(1), s:'épicas implementadas/mes · '+throughputMos.join('+')+'÷3', c:throughput>=2?'green':throughput>=1?'amber':'red'},
+    {l:'Lead time estimado backlog', v:leadTime!==null?leadTime+' mes'+(leadTime!==1?'es':''):'—', s:blTotal+' en backlog ÷ '+throughput.toFixed(1)+' throughput', c:leadTime===null?'muted':leadTime>6?'red':leadTime>3?'amber':'green'},
+    {l:'Épicas implementadas total', v:done.length, s:'histórico completo del archivo', c:'blue'},
+  ].map(function(k){
+    return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv '+k.c+'">'+k.v+'</div><div class="ks">'+k.s+'</div></div>';
+  }).join('');
+}
+
+// ── BARS ──────────────────────────────────────────────────────────────────
+function renderBars(act, months){
+  document.getElementById('bar-ttl').textContent='Horas comprometidas por mes — equipo (cap. '+CAP_E+'h)';
+  document.getElementById('mbars').innerHTML=months.map(function(m){
+    var h=Math.round(act.reduce(function(s,e){return s+hsMo(e,m.yr,m.mo);},0));
+    var pct=Math.min(h/CAP_E,1), cls=h>CAP_E?'ov':pct>.85?'hi':'ok';
+    return '<div class="mbc">'+
+      '<div class="mbt"><div class="mbf '+cls+'" style="height:'+Math.max(pct*100,2)+'%"></div></div>'+
+      '<div class="mbv">'+h+'h</div><div class="mbp">'+(pct*100).toFixed(0)+'%</div>'+
+      '<div class="mbl">'+m.lbl+'</div></div>';
+  }).join('');
+}
+
+// ── RESUMEN TABLE ──────────────────────────────────────────────────────────
+function renderResumen(act, months){
+  var mo=CUR_MO.mo, yr=CUR_MO.yr;
+  var byP={};
+  act.forEach(function(e){
+    var p=e.per||'(Sin asignar)'; if(!byP[p])byP[p]={n:0,nOk:0,comp:0};
+    byP[p].n++;
+    var h=hsMo(e,yr,mo);
+    // nOk = epics that have est+dates (contribute hours in at least one month)
+    if(h>0) byP[p].nOk++;  // only count if actually contributes hours this month
+    byP[p].comp+=h;
+  });
+  document.getElementById('tb-res').innerHTML=Object.keys(byP).sort().map(function(p){
+    var d=byP[p], pct=d.comp/CAP_P;
+    var c=pct>1?'var(--red)':pct>.85?'var(--amber)':'var(--green)';
+    var disp=Math.max(0,CAP_P-d.comp);
+    var sinDatos=d.n-d.nOk;
+    return '<tr>'+
+      '<td class="l"><strong>'+sn(p)+'</strong></td>'+
+      '<td>'+d.nOk+(sinDatos>0?'<span style="font-size:10px;color:var(--amber);margin-left:4px">+'+sinDatos+' sin datos</span>':'')+'</td>'+
+      '<td><strong style="color:'+c+'">'+fmt(d.comp)+'</strong></td>'+
+      '<td style="color:'+c+';font-weight:600">'+(pct*100).toFixed(0)+'%</td>'+
+      '<td style="color:'+(disp<CAP_P*.2?'var(--red)':'var(--green)')+';font-weight:600">'+fmt(disp)+'</td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">Sin datos</td></tr>';
+}
+
+// ── MONTH SELECTOR ─────────────────────────────────────────────────────────
+function renderMsel(months){
+  document.getElementById('msel-btns').innerHTML=months.map(function(m){
+    var on=CUR_MO&&CUR_MO.yr===m.yr&&CUR_MO.mo===m.mo;
+    return '<button class="mbtn'+(on?' on':'')+'" onclick="selMo('+m.yr+','+m.mo+')">'+m.lbl+'</button>';
+  }).join('');
+}
+function selMo(yr,mo){ CUR_MO={yr:yr,mo:mo}; var months=buildMonths(); renderMsel(months); renderPM(); }
+
+// ── POR PERSONA / MES ─────────────────────────────────────────────────────
+function renderPorMes(act, months, curmo){
+  if(!curmo) return;
+  var yr=curmo.yr, mo=curmo.mo;
+  var mesLbl=new Date(yr,mo-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric'});
+  var hideZero=document.getElementById('hide-zero')&&document.getElementById('hide-zero').checked;
+
+  // Group by persona
+  var byP={};
+  act.forEach(function(e){
+    var p=e.per||'(Sin asignar)';
+    if(!byP[p]) byP[p]=[];
+    byP[p].push(e);
+  });
+
+  var sorted=Object.keys(byP).map(function(p){
+    var epics=byP[p];
+    var comp=epics.reduce(function(s,e){return s+hsMo(e,yr,mo);},0);
+    return {p:p, epics:epics, comp:comp, avail:CAP_P-comp};
+  }).filter(function(x){ return !hideZero||x.comp>0; })
+    .sort(function(a,b){ return b.comp-a.comp; });
+
+  document.getElementById('pgrid').innerHTML=sorted.map(function(x){
+    var p=x.p, comp=x.comp, avail=x.avail;
+    var pct=Math.min(comp/CAP_P,1);
+    var bc=comp>CAP_P?'var(--red)':pct>.85?'var(--amber)':pct>.4?'var(--blue)':'var(--green)';
+    var hc=comp>CAP_P?'var(--red)':pct>.85?'var(--amber)':'var(--navy)';
+    var conHs=x.epics.filter(function(e){return hsMo(e,yr,mo)>0;}).sort(function(a,b){return hsMo(b,yr,mo)-hsMo(a,yr,mo);});
+    var sinHs=x.epics.filter(function(e){return hsMo(e,yr,mo)===0;});
+
+    return '<div class="pc">'+
+      '<div class="pch"><div>'+
+        '<div class="pn">'+sn(p)+'</div>'+
+        '<div class="psub">'+x.epics.length+' épica'+(x.epics.length!==1?'s':'')+' activas · '+mesLbl+'</div>'+
+      '</div><div class="phr">'+
+        '<div class="phv" style="color:'+hc+'">'+comp.toFixed(0)+'h</div>'+
+        '<div class="phl" style="color:'+(avail<0?'var(--red)':'var(--green)')+'">'+
+          (avail>=0?'+'+avail.toFixed(0)+'h libres':'⚠ '+Math.abs(avail).toFixed(0)+'h desborde')+
+        '</div>'+
+        '<div class="phc">de '+CAP_P+'h</div>'+
+      '</div></div>'+
+      '<div class="pbar-wrap">'+
+        '<div class="pbar-lbl"><span>'+(pct*100).toFixed(0)+'% comprometido</span><span>'+comp.toFixed(0)+'h / '+CAP_P+'h</span></div>'+
+        '<div class="pbt"><div class="pbf" style="width:'+(pct*100)+'%;background:'+bc+'"></div></div>'+
+      '</div>'+
+      '<div class="prows">'+
+        (conHs.length?conHs.map(function(e){
+          var h=hsMo(e,yr,mo), hpm=hPerMonth(e);
+          var sk=e.key.replace(/'/g,"\\'"), sp=e.per.replace(/'/g,"\\'");
+          return '<div class="pr">'+
+            '<span class="prk">'+e.key+'</span>'+
+            '<span class="prn" title="'+e.sum+'">'+e.sum+'</span>'+
+            (e.est>0?'<span class="pre">'+e.est.toFixed(0)+'h est</span>':'')+
+            '<span class="prm" style="color:'+bc+'">'+h.toFixed(0)+'h</span>'+
+            '<button class="ebtn" onclick="editP(\''+sk+'\',\''+sp+'\',this)" title="Cambiar responsable">✏</button>'+
+          '</div>';
+        }).join(''):'<div class="pem">Sin épicas con horas este mes</div>')+
+        (sinHs.length?'<div class="pr" style="opacity:.5">'+
+          '<span class="prk" style="color:#CBD5E1">+'+sinHs.length+'</span>'+
+          '<span class="prn" style="color:var(--muted);font-style:italic">épica'+(sinHs.length>1?'s':'')+' sin horas asignadas este mes</span>'+
+        '</div>':'')+
+      '</div></div>';
+  }).join('')||'<div style="padding:24px;color:var(--muted);font-size:12px;text-align:center">Sin épicas activas con estimación para este mes</div>';
+}
+
+// ── VISTA ANUAL ───────────────────────────────────────────────────────────
+function renderAnual(act, months){
+  var people=uniq(act.map(function(e){return e.per||'(Sin asignar)';})).sort();
+  var h='<thead><tr><th class="l">Persona</th>';
+  months.forEach(function(m){h+='<th>'+m.lbl+'</th>';});
+  h+='<th>Total</th></tr></thead><tbody>';
+  people.forEach(function(p){
+    var my=act.filter(function(e){return (e.per||'(Sin asignar)')===p;}), tot=0;
+    h+='<tr><td class="l"><strong>'+sn(p)+'</strong></td>';
+    months.forEach(function(m){
+      var hs=Math.round(my.reduce(function(s,e){return s+hsMo(e,m.yr,m.mo);},0)); tot+=hs;
+      var cls=hs>CAP_P?'hov':hs>CAP_P*.85?'hhi':hs>0?'hok':'hz';
+      h+='<td><span class="hc '+cls+'">'+(hs>0?hs+'h':'—')+'</span></td>';
+    });
+    h+='<td><strong>'+tot+'h</strong></td></tr>';
+  });
+  // Total equipo
+  var gt=0;
+  h+='<tr class="tot"><td class="l">TOTAL EQUIPO</td>';
+  months.forEach(function(m){
+    var hs=Math.round(act.reduce(function(s,e){return s+hsMo(e,m.yr,m.mo);},0)); gt+=hs;
+    var cls=hs>CAP_E?'hov':hs>CAP_E*.85?'hhi':'';
+    h+='<td style="'+(cls?'color:var(--'+(cls==='hov'?'red':'amber')+')':'')+'">'+hs+'h</td>';
+  });
+  h+='<td>'+gt+'h</td></tr>';
+  // Disponible
+  h+='<tr class="tot"><td class="l" style="color:var(--green)">Disponible equipo</td>';
+  months.forEach(function(m){
+    var hs=Math.round(act.reduce(function(s,e){return s+hsMo(e,m.yr,m.mo);},0)), d=CAP_E-hs;
+    h+='<td style="color:'+(d<0?'var(--red)':d<CAP_P?'var(--amber)':'var(--green)')+';font-weight:600">'+d+'h</td>';
+  });
+  h+='<td></td></tr></tbody>';
+  document.getElementById('tbl-anual').innerHTML=h;
+}
+
+// ── ÉPICAS ACTIVAS ────────────────────────────────────────────────────────
+function renderEpicas(act){
+  document.getElementById('cnt-a').textContent=act.length;
+  document.getElementById('tb-epi').innerHTML=act.sort(function(a,b){
+    return hsMo(b,CUR_MO.yr,CUR_MO.mo)-hsMo(a,CUR_MO.yr,CUR_MO.mo);
+  }).map(function(e){
+    var n=numMonths(e), hpm=hPerMonth(e);
+    var sk=e.key.replace(/'/g,"\\'"), sp=e.per.replace(/'/g,"\\'");
+    return '<tr>'+
+      '<td class="l" style="font-family:monospace;font-size:10px;color:var(--muted)">'+e.key+'</td>'+
+      '<td class="l"><div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.sum+'">'+e.sum+'</div></td>'+
+      '<td class="l">'+sn(e.per)+' <button class="ebtn" onclick="editP(\''+sk+'\',\''+sp+'\',this)">✏</button></td>'+
+      '<td>'+fmt(e.est)+'</td>'+
+      '<td>'+fmtDate(e.fi)+'</td>'+
+      '<td>'+fmtDate(e.ff)+'</td>'+
+      '<td>'+(n>0?n+' mes'+(n>1?'es':''):'—')+'</td>'+
+      '<td><strong>'+fmt(hpm)+'</strong></td>'+
+      '<td><span class="pill '+(e.st.toUpperCase().indexOf('CURSO')>=0?'pb':'pg')+'">'+e.st+'</span></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--muted)">Sin épicas activas con estimación y fechas</td></tr>';
+}
+
+// ── BACKLOG ───────────────────────────────────────────────────────────────
+var DONE = ['IMPLEMENTADO'];
+function isDone(e){ return e.st.toUpperCase()==='IMPLEMENTADO'; }
+
+function renderFinalizadas(all){
+  var done = all.filter(isDone);
+  document.getElementById('cnt-f').textContent = done.length;
+
+  // Group by close month (use ff date if available, else today)
+  var byMo = {};
+  done.forEach(function(e){
+    var d = e.ff || new Date();
+    var key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    var lbl = d.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
+    if(!byMo[key]) byMo[key]={lbl:lbl,epics:[],est:0};
+    byMo[key].epics.push(e);
+    byMo[key].est += e.est||0;
+  });
+
+  var sorted = Object.keys(byMo).sort().reverse();
+  document.getElementById('tb-fin').innerHTML = sorted.map(function(k){
+    var mo = byMo[k];
+    var detail = mo.epics.slice(0,5).map(function(e){
+      return '<span style="font-family:monospace;font-size:10px;color:var(--muted)">'+e.key+'</span> '+
+             '<span style="font-size:11px">'+e.sum.slice(0,35)+'</span> '+
+             '<span style="font-size:10px;color:var(--muted)">('+sn(e.per)+')</span>';
+    }).join('<br>');
+    if(mo.epics.length>5) detail += '<br><span style="font-size:10px;color:var(--muted)">+' + (mo.epics.length-5) + ' más...</span>';
+    return '<tr>'+
+      '<td class="l"><strong>'+mo.lbl+'</strong></td>'+
+      '<td><strong style="color:var(--green)">'+mo.epics.length+'</strong></td>'+
+      '<td>'+fmt(mo.est)+'</td>'+
+      '<td class="l" style="line-height:1.8">'+detail+'</td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">Sin épicas finalizadas</td></tr>';
+}
+
+function renderBL(bl, other){
+  var all = bl; // only show true backlog states, ignore 'other'
+  document.getElementById('cnt-b').textContent=all.length;
+  document.getElementById('tb-bl').innerHTML=all.sort(function(a,b){return (b.est||0)-(a.est||0);}).map(function(e){
+    var motivo = !e.est?'Sin estimación':(!e.fi||!e.ff)?'Sin fechas':'Estado backlog';
+    return '<tr>'+
+      '<td class="l" style="font-family:monospace;font-size:10px;color:var(--muted)">'+e.key+'</td>'+
+      '<td class="l"><div style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.sum+'">'+e.sum+'</div></td>'+
+      '<td class="l">'+sn(e.per)+'</td>'+
+      '<td>'+fmt(e.est)+'</td>'+
+      '<td>'+fmtDate(e.fi)+'</td>'+
+      '<td>'+fmtDate(e.ff)+'</td>'+
+      '<td><span class="pill pa">'+motivo+'</span></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--muted)">Sin épicas en backlog</td></tr>';
+}
+
+// ── EDIT PERSONA ──────────────────────────────────────────────────────────
+function editP(key,cur,btn){
+  var ex=document.getElementById('epop'); if(ex){ex.remove();return;}
+  var pers=uniq(EPICS.map(function(e){return e.per;}).filter(function(p){return p&&p.trim();})).sort();
+  var rect=btn.getBoundingClientRect();
+  var div=document.createElement('div'); div.id='epop'; div.className='epop';
+  div.style.top=Math.min(rect.bottom+6,window.innerHeight-180)+'px';
+  div.style.left=Math.min(rect.left,window.innerWidth-290)+'px';
+  div.innerHTML='<label>Cambiar responsable · '+key+'</label>'+
+    '<input id="ei" list="edl" value="'+(cur==='—'?'':cur)+'" placeholder="Nombre...">'+
+    '<datalist id="edl">'+pers.map(function(p){return '<option value="'+p+'">';}).join('')+'</datalist>'+
+    '<div class="epop-ft">'+
+      '<button class="bs" onclick="document.getElementById(\'epop\').remove()">Cancelar</button>'+
+      '<button class="bs" style="color:var(--red);border-color:#FECACA" onclick="clrP(\''+key.replace(/'/g,"\\'")+'\')">Sin asignar</button>'+
+      '<button class="bp" onclick="svP(\''+key.replace(/'/g,"\\'")+'\')">Guardar</button>'+
+    '</div>';
+  document.body.appendChild(div);
+  var inp=document.getElementById('ei'); inp.focus(); inp.select();
+  inp.onkeydown=function(ev){if(ev.key==='Enter')svP(key);if(ev.key==='Escape')div.remove();};
+  setTimeout(function(){document.addEventListener('click',function h(ev){if(!div.contains(ev.target)&&ev.target!==btn){div.remove();document.removeEventListener('click',h);}});},150);
+}
+function svP(key){
+  var v=(document.getElementById('ei')||{}).value||'';
+  document.getElementById('epop')?.remove();
+  if(!v.trim()) return;
+  OVR[key]=v.trim();
+  var e=EPICS.find(function(x){return x.key===key;}); if(e) e.per=v.trim();
+  renderAll();
+}
+function clrP(key){
+  document.getElementById('epop')?.remove();
+  OVR[key]='';
+  var e=EPICS.find(function(x){return x.key===key;}); if(e) e.per='';
+  renderAll();
+}
+
+// ── TEAM & STATUS ─────────────────────────────────────────────────────────
+function addMbr(){var inp=document.getElementById('new-mbr'),v=inp.value.trim();if(!v)return;if(TEAM.indexOf(v)===-1)TEAM.push(v);inp.value='';renderEquipo();if(EPICS.length)renderAll();}
+function delMbr(n){TEAM=TEAM.filter(function(m){return m!==n;});renderEquipo();if(EPICS.length)renderAll();}
+function importTeam(){
+  if(!EPICS.length){document.getElementById('imp-msg').textContent='Cargá el archivo primero.';return;}
+  var added=0;
+  EPICS.filter(isAct).forEach(function(e){if(e.per&&e.per.trim()&&TEAM.indexOf(e.per.trim())===-1){TEAM.push(e.per.trim());added++;}});
+  TEAM.sort();
+  document.getElementById('imp-msg').textContent=added+' persona'+(added!==1?'s':'')+' importada'+(added!==1?'s':'')+'.';
+  setTimeout(function(){document.getElementById('imp-msg').textContent='';},3000);
+  renderEquipo(); if(EPICS.length)renderAll();
+}
+function addSt(){var inp=document.getElementById('new-st'),v=inp.value.trim().toUpperCase();if(!v)return;if(ACT.indexOf(v)===-1)ACT.push(v);inp.value='';renderEquipo();if(EPICS.length)renderAll();}
+function delSt(s){ACT=ACT.filter(function(x){return x!==s;});renderEquipo();if(EPICS.length)renderAll();}
+function renderEquipo(){
+  var tl=document.getElementById('team-list'); if(!tl)return;
+  tl.innerHTML=TEAM.length?TEAM.map(function(n){var s=n.replace(/'/g,"\\'");
+    return '<div class="trow"><span>👤</span><span style="flex:1;font-size:12px;font-weight:500">'+n+'</span>'+
+      '<button onclick="delMbr(\''+s+'\')" style="background:none;border:1px solid #FECACA;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--red)">✕ Quitar</button></div>';
+  }).join(''):'<p style="font-size:12px;color:var(--muted);font-style:italic">Sin personas definidas — se muestran todas.</p>';
+  var sl=document.getElementById('st-list'); if(!sl)return;
+  sl.innerHTML=ACT.map(function(s){var ss=s.replace(/'/g,"\\'");
+    return '<div style="display:flex;align-items:center;gap:5px;background:#F8FAFC;border:1px solid var(--bdr);border-radius:16px;padding:3px 10px">'+
+      '<span style="font-size:11px;color:var(--green)">✓</span><span style="font-size:11px">'+s+'</span>'+
+      '<button onclick="delSt(\''+ss+'\')" style="background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:13px" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'#CBD5E1\'">×</button></div>';
+  }).join('');
+}
+
+// ── CONFIG & TABS ─────────────────────────────────────────────────────────
+// ═══════════════════════════
+// JIRA INTEGRATION
+// ═══════════════════════════
+var JIRA_CFG = JSON.parse(localStorage.getItem('jira_cfg')||'{}');
+
+function loadJiraCfg(){
+  if(JIRA_CFG.url) document.getElementById('cfg-jurl').value=JIRA_CFG.url;
+  if(JIRA_CFG.email) document.getElementById('cfg-jemail').value=JIRA_CFG.email;
+  if(JIRA_CFG.token) document.getElementById('cfg-jtoken').value=JIRA_CFG.token;
+  if(JIRA_CFG.project) document.getElementById('cfg-jproject').value=JIRA_CFG.project||'FQAS10';
+}
+
+function jiraHeaders(){
+  var b64 = btoa(JIRA_CFG.email+':'+JIRA_CFG.token);
+  return {'Authorization':'Basic '+b64,'Content-Type':'application/json'};
+}
+
+function proxyUrl(url){
+  return 'https://corsproxy.io/?'+encodeURIComponent(url);
+}
+
+function testJira(){
+  var url=document.getElementById('cfg-jurl').value.trim();
+  var email=document.getElementById('cfg-jemail').value.trim();
+  var token=document.getElementById('cfg-jtoken').value.trim();
+  var st=document.getElementById('jira-status');
+  if(!url||!email||!token){st.textContent='Completá todos los campos.';st.style.color='var(--red)';return;}
+  st.textContent='Probando conexión...'; st.style.color='var(--muted)';
+  var testUrl=url.replace(/\/$/,'')+'/rest/api/3/myself';
+  fetch(proxyUrl(testUrl),{headers:{'Authorization':'Basic '+btoa(email+':'+token),'Content-Type':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.emailAddress){
+        st.textContent='✓ Conectado como '+d.displayName;
+        st.style.color='var(--green)';
+      } else {
+        st.textContent='Error: '+JSON.stringify(d);
+        st.style.color='var(--red)';
+      }
+    }).catch(function(e){st.textContent='Error de conexión: '+e.message;st.style.color='var(--red)';});
+}
+
+function syncJira(){
+  if(!JIRA_CFG.url||!JIRA_CFG.email||!JIRA_CFG.token){
+    openCfg(); return;
+  }
+  var btn=document.getElementById('sync-btn');
+  btn.textContent='⟳ Cargando...'; btn.disabled=true;
+  fetchJiraEpics(JIRA_CFG.project||'FQAS10', 0, []);
+}
+
+function fetchJiraEpics(project, startAt, accumulated){
+  var maxResults=100;
+  // JQL: epics from project, ordered by created
+  var jql='project='+project+' AND issuetype=Epic ORDER BY created DESC';
+  var fields='summary,status,assignee,customfield_10016,customfield_10014,customfield_10015,customfield_10018,customfield_10019';
+  var url=JIRA_CFG.url.replace(/\/$/,'')+'/rest/api/3/search?jql='+encodeURIComponent(jql)+'&startAt='+startAt+'&maxResults='+maxResults+'&fields='+fields;
+
+  fetch(proxyUrl(url),{headers:{'Authorization':'Basic '+btoa(JIRA_CFG.email+':'+JIRA_CFG.token),'Content-Type':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.errorMessages){
+        alert('Error Jira: '+data.errorMessages.join(', '));
+        resetSyncBtn(); return;
+      }
+      var issues=data.issues||[];
+      accumulated=accumulated.concat(issues);
+      if(startAt+maxResults<data.total){
+        fetchJiraEpics(project, startAt+maxResults, accumulated);
+      } else {
+        processJiraIssues(accumulated);
+      }
+    }).catch(function(e){
+      alert('Error conectando a Jira: '+e.message+'
+Verificá tu API token en ⚙ Config.');
+      resetSyncBtn();
+    });
+}
+
+function processJiraIssues(issues){
+  // Convert Jira issues to EPICS format
+  EPICS = issues.map(function(issue){
+    var f=issue.fields;
+    var assignee=f.assignee?f.assignee.displayName:'';
+    var est=f.customfield_10016?Math.round(f.customfield_10016/3600*10)/10:0; // story points or time est in seconds
+    var fi=f.customfield_10014?new Date(f.customfield_10014):null; // start date
+    var ff=f.customfield_10015?new Date(f.customfield_10015):   // due date
+           f.customfield_10018?new Date(f.customfield_10018):null;
+    return {
+      key: issue.key,
+      sum: (f.summary||'').slice(0,72),
+      st:  f.status?f.status.name:'',
+      per: OVR[issue.key]||assignee,
+      est: est,
+      fi:  fi,
+      ff:  ff,
+    };
+  });
+
+  var now=new Date();
+  CUR_MO={yr:now.getFullYear(), mo:now.getMonth()+1};
+  document.getElementById('tag-upd').textContent='Jira · '+new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('tag-file').textContent='Jira: '+JIRA_CFG.project;
+  document.getElementById('upload-zone').style.display='none';
+  document.getElementById('app').style.display='block';
+  resetSyncBtn();
+  renderAll();
+}
+
+function resetSyncBtn(){
+  var btn=document.getElementById('sync-btn');
+  btn.textContent='⟳ Sincronizar Jira'; btn.disabled=false;
+}
+
+// Auto-sync if credentials saved
+if(JIRA_CFG.url&&JIRA_CFG.email&&JIRA_CFG.token){
+  document.getElementById('sync-btn').style.display='inline';
+}
+
+function openCfg(){
+  document.getElementById('cfg-modal').classList.add('on');
+  loadJiraCfg();
+}
+function closeCfg(){document.getElementById('cfg-modal').classList.remove('on');}
+function saveCfg(){
+  // Save Jira config
+  var jurl=document.getElementById('cfg-jurl').value.trim();
+  var jemail=document.getElementById('cfg-jemail').value.trim();
+  var jtoken=document.getElementById('cfg-jtoken').value.trim();
+  var jproject=document.getElementById('cfg-jproject').value.trim()||'FQAS10';
+  if(jurl&&jemail&&jtoken){
+    JIRA_CFG={url:jurl,email:jemail,token:jtoken,project:jproject};
+    localStorage.setItem('jira_cfg',JSON.stringify(JIRA_CFG));
+    document.getElementById('sync-btn').style.display='inline';
+  }
+  CFG.p=parseInt(document.getElementById('cfg-p').value)||7;
+  CFG.h=parseInt(document.getElementById('cfg-h').value)||160;
+  CAP_P=CFG.h; CAP_E=CFG.p*CFG.h;
+  document.getElementById('cap-tag').textContent=CFG.p+'×'+CFG.h+'h='+CAP_E+'h';
+  document.getElementById('cap-lbl').textContent=CAP_P;
+  closeCfg(); if(EPICS.length)renderAll();
+}
+function showPane(id,el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+  el.classList.add('on'); document.getElementById('pane-'+id).classList.add('on');
+  if(id==='equipo')renderEquipo();
+}
+</script>
+</body>
+</html>
